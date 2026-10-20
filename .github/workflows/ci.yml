@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push: { branches: [main] }
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with: { dotnet-version: 8.0.x }
+      - run: dotnet restore backend/TravelXpense.sln
+      - run: dotnet build backend/TravelXpense.sln --no-restore -c Release
+      - run: dotnet test backend/TravelXpense.sln --no-build -c Release --collect:"XPlat Code Coverage" --logger trx
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: test-results, path: "backend/tests/**/TestResults/**" }
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - run: npm ci
+        working-directory: frontend
+      - run: npm run build
+        working-directory: frontend
+
+  docker:
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t travelxpense-api:${{ github.sha }} backend
+
+  # OPTIONAL: deploy to Azure App Service (Linux container). Needs repo secrets/vars - see docs/DEPLOY_AZURE.md.
+  deploy:
+    if: github.ref == 'refs/heads/main' && vars.AZURE_WEBAPP_NAME != ''
+    needs: docker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with: { dotnet-version: 8.0.x }
+      - run: dotnet publish backend/src/TravelXpense.Api/TravelXpense.Api.csproj -c Release -o publish
+      - uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ vars.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: publish

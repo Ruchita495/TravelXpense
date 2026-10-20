@@ -1,0 +1,30 @@
+# Starts SQL Server + Redis + the API. Run the React app separately with `npm run dev` (see README).
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "TxDev_Passw0rd123"   # dev only - never reuse this anywhere real
+    ports: ["1433:1433"]
+    volumes: ["sqldata:/var/opt/mssql"]
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+
+  api:
+    build: ./backend
+    depends_on: [sqlserver, redis]
+    ports: ["5000:8080"]
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development      # enables Swagger + demo users
+      ConnectionStrings__Default: "Server=sqlserver,1433;Database=TravelXpense;User Id=sa;Password=TxDev_Passw0rd123;TrustServerCertificate=True"
+      Redis__ConnectionString: "redis:6379"
+      Messaging__Provider: "InProcess"
+      # Optional - uncomment and fill in to use the real services:
+      # Amadeus__ClientId: ""
+      # Amadeus__ClientSecret: ""
+      # Anthropic__ApiKey: ""
+
+volumes:
+  sqldata:
