@@ -49,7 +49,6 @@ npm run dev                      # http://localhost:5173
 
 Demo logins (password `Password123!`): `employee@demo.com`, `manager@demo.com`.
 
-> Apple Silicon Mac? The SQL Server image is x86. Enable "Use Rosetta" in Docker Desktop, or swap the image for `mcr.microsoft.com/azure-sql-edge`.
 
 ### Try the whole flow (5 minutes)
 1. Log in as **employee@demo.com**. Create a trip (e.g. Toronto).
@@ -110,7 +109,7 @@ docs/            Metrics guide, Azure deploy notes
 | GET | /api/approvals | manager/admin | reports awaiting a decision |
 | POST | /api/approvals/{id}/approve, /reject | manager/admin | decide |
 
-## Known limitations (good "what I'd improve next" interview answers)
+## Known limitations (good "what I'd improve next")
 - **Outbox pattern:** the report is saved, then the event is published. If the app crashes between the two, the report stays "Submitted". A transactional outbox table fixes this.
 - **EnsureCreated vs migrations:** fine for a demo; real projects use EF Core migrations.
 - **Single currency (CAD):** no FX conversion.
